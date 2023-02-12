@@ -299,7 +299,7 @@ void saveimage (int vmax, char *filename, int K, int Z, float M[K][Z]){
     fprintf(f,"%d\n", vmax); //maximal value of pixel used
     for (int i=0; i<K; i++){
         for (int j=0; j<Z; j++){
-            fprintf(f,"%f ",(1-M[i][j])*vmax);//fill the matrix of the image one by one
+            fprintf(f,"%d ",(int)(1-M[i][j])*vmax);//fill the matrix of the image one by one
         }
     }
     fclose(f);
