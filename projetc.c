@@ -349,170 +349,6 @@ int levenshtein(char s1[], char s2[]) { //computation of levenshtein distance.
 
     return(matrix[s2len][s1len]);
 }
-
-
-float sansbonus (char c[N], char c1[N], int distance1){ //function to compute the distance between two files without having replaced the key words in the original file by "m"
-    int lines1=1;
-    int lines2=1;
-    char buff[N];
-    char buff1[N];
-    List* list1= void_list();
-    List* list2= void_list();
-    FILE* f1=fopen(c,"r");
-    //we open the two translated files and run through them to fill our empty lists previously created
-    while(fgets(buff, sizeof(buff), f1) != NULL) {
-            Add_segment(list1,buff,lines1);
-            lines1++;
-    }
-    fclose(f1);
-    FILE* f2=fopen(c1,"r");
-    if(f2 == NULL) {
-        perror("Unable to open file!");
-        exit(1);
-    }
-    while(fgets(buff1, sizeof(buff1), f2) != NULL) {
-            Add_segment(list2,buff1,lines2);
-            lines2++;
-    }
-    fclose(f2);
-    Segment*e3=list1->first;
-    int Lenghtl1=List_lenght(list1);
-    int lenghtl2=List_lenght(list2);
-    float M[Lenghtl1][lenghtl2]; //creation of the matrix M that will contain the distance of each two segments.
-    for (int i=0;i<Lenghtl1;i++){
-        Segment*e4=list2->first;
-        for (int j=0; j<lenghtl2; j++){
-            if (distance1==1){
-                M[i][j]=DiceDistance(e3->string,e4->string);
-            }
-            else{
-                float z=max(strlen(e3->string), strlen(e4->string));
-                M[i][j]=(levenshtein(e3->string,e4->string)/z); //we normalize the levenshtein by dividing it by the maximum length of the two strings
-            }
-            e4=e4->next;
-        }
-        e3=e3->next;
-    }
-    float M1[Lenghtl1][lenghtl2]; //we create a copy of the matrix M, that will be useful when we have to fill the matrix C of the 4th part of the project
-    float C[Lenghtl1][lenghtl2]; //creation of matrix C (for the 4th part of the project)
-    float F[Lenghtl1][lenghtl2];//creation of matrix F (for the 5th part of the project)
-    for (int i=0;i<Lenghtl1;i++){ //copying all elements of M in M1
-        for (int j=0; j<lenghtl2; j++){
-            M1[i][j]=M[i][j];
-        }
-    }
-    //emptying the two segment lists that we dont need anymore
-    empty_list(list1);
-    empty_list(list2);
-    //We start by filling all the elements of C with -1 as a value
-    for (int i=0;i<Lenghtl1;i++){
-        for (int j=0;j<lenghtl2;j++){
-            C[i][j]=-1;
-        }
-    }
-    float smallest=0;
-    while (1){
-        smallest=10;
-        int lines=0;
-        int row=0;
-        //we look for the smallest element in the Matrix M1, and we save its line ans row in the Matrix
-        for (int i=0;i<Lenghtl1;i++){
-            for (int j=0;j<lenghtl2;j++){
-                if (M1[i][j]<smallest){
-                    smallest=M1[i][j];
-                    lines=i;
-                    row=j;
-                    
-                }
-            }
-        }
-        if (smallest==10){ //if the smallest element is 10, that means we are done with the algorithm and we break from the function
-            break;
-        }
-        //However, if that isnt the case, we copy the smallest element of M1 into C (in the same position)
-        C[lines][row]=smallest;
-        M1[lines][row]=10; //and we remove that smallest element from M1, by replacing it with the value 10 (that can never be attained because the dice distance is between 0 and 1)
-        for (int i=0;i<lenghtl2;i++){
-            if (i!=row){
-                C[lines][i]=1;
-                M1[lines][i]=10; // we get rid of all the rows corresponding to the smallest element's line
-                
-            }
-        }
-        for (int j=0;j<Lenghtl1;j++){
-            if (j!=lines){
-                C[j][row]=1;
-                M1[j][row]=10; // we get rid of all the lines corresponding to the smallest element's row
-            }
-        }
-    }
-    //filling the elements of F[Lenghtl1-2][lenghtl2-2] with the formula given by the instruction
-   for (int i=2; i<Lenghtl1-2; i++){
-        for (int j=2; j<lenghtl2-2; j++){
-            double res=0;
-            for (int k=-2; k<3; k++){
-                res+=C[i+k][j+k];
-            }
-            F[i][j]=(1.0/5.0)*res;
-        }
-    }
-    // we fill with 1's the part of the matrix which cannot be calculated with the formula (the extremities)
-    for (int i=2;i<lenghtl2-2;i++){
-        F[0][i]=1;
-        F[1][i]=1;
-        F[Lenghtl1-1][i]=1;
-        F[Lenghtl1-2][i]=1;
-    }
-    for (int i=2;i<Lenghtl1-2;i++){
-        F[i][0]=1;
-        F[i][1]=1;
-        F[i][lenghtl2-1]=1;
-        F[i][lenghtl2-2]=1;
-    }
-    //We fill the four corners of the matrix whth zeros on the diagonal
-    F[0][0]=0;
-    F[0][1]=1;
-    F[1][0]=1;
-    F[1][1]=0;
-    
-    F[0][lenghtl2-1]=1;
-    F[0][lenghtl2-2]=1;
-    F[1][lenghtl2-1]=1;
-    F[1][lenghtl2-2]=1;
-    
-    F[Lenghtl1-1][0]=1;
-    F[Lenghtl1-2][0]=1;
-    F[Lenghtl1-1][1]=1;
-    F[Lenghtl1-2][1]=1;
-    
-    F[Lenghtl1-2][lenghtl2-2]=0;
-    F[Lenghtl1-2][lenghtl2-1]=1;
-    F[Lenghtl1-1][lenghtl2-2]=1;
-    F[Lenghtl1-1][lenghtl2-1]=0;
-    
-    // We use the threshold to remove all values over 0.7
-    for (int i=0; i<Lenghtl1; i++){
-        for (int j=0; j<lenghtl2; j++){
-            if (F[i][j]>=0.7){
-                F[i][j]=1;
-            }
-        }
-    }
-   float min=((Lenghtl1>lenghtl2) ? lenghtl2:Lenghtl1); //find the smallest lenghth of files.
-   float m=0;
-    //calculate m which is gonna be used to find final result.
-    for (int i=0;i<Lenghtl1;i++){
-        for (int j=0; j<lenghtl2;j++){
-            m+=(1-F[i][j]);
-        }
-    }
-    //calculate final result thanks to the formula given by the instructions
-    float distance=1-(m/min);
-    return distance;
-}
-
-
-
 int main(int argc, char *argv[]){
     int distance1;// ask the user which distance they want to use in this program
     printf("do you want to excecute program with dice distance (enter 1) or  levenshtein distance (enter 2 )?\n");
@@ -649,8 +485,8 @@ int main(int argc, char *argv[]){
         e3=e3->next;
     }
     float M1[Lenghtl1][lenghtl2]; //we create a copy of the matrix M, that will be useful when we have to fill the matrix C of the 4th part of the project
-    float C[Lenghtl1][lenghtl2]; //creation of matrix C (for the 4th part of the project)
-    float F[Lenghtl1][lenghtl2];//creation of matrix F (for the 5th part of the project)
+    float C[Lenghtl1][lenghtl2]; //creation of matrix C 
+    float F[Lenghtl1][lenghtl2];//creation of matrix F 
     for (int i=0;i<Lenghtl1;i++){ //copying all elements of M in M1
         for (int j=0; j<lenghtl2; j++){
             M1[i][j]=M[i][j];
@@ -704,7 +540,7 @@ int main(int argc, char *argv[]){
     }
     //generating the image "couplage.pgm".
     saveimage(255,"couplage.pgm",Lenghtl1,lenghtl2,C);
-    //filling the elements of F[Lenghtl1-2][lenghtl2-2] with the formula given by the instruction
+    //filling the elements of F[Lenghtl1-2][lenghtl2-2] with the convolution formula
    for (int i=2; i<Lenghtl1-2; i++){
         for (int j=2; j<lenghtl2-2; j++){
             double res=0;
@@ -769,8 +605,6 @@ int main(int argc, char *argv[]){
     float distance=1-(m/min);
     printf("result with bonus is :%.2f\n", distance); //print the final result with only 2 decimals
     //bonus
-    float c=sansbonus("Traductionw.txt","Traductionw1.txt",distance1);
-    printf("result without bonus is :%.2f\n", c);
     if (bonus==1){
         char buff2[N];
         char buff3[N];
